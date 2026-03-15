@@ -2,7 +2,7 @@
 
 > Agregá los datos de tu cámara como marca de agua en tus fotos — listas para compartir por WhatsApp.
 
-**[🇬🇧 Read in English](README.md)**
+**[🇬🇧 Read in English](README.md)** · **[📖 Manual de usuario completo](docs/USER_GUIDE.es.md)**
 
 ---
 

@@ -2,7 +2,7 @@
 
 > Add your camera settings as a watermark to your photos — ready to share on WhatsApp.
 
-**[🇪🇸 Leer en español](README.es.md)**
+**[🇪🇸 Leer en español](README.es.md)** · **[📖 Full user guide](docs/USER_GUIDE.md)**
 
 ---
 
