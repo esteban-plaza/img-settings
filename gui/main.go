@@ -19,7 +19,7 @@ func main() {
 	icon := fyne.NewStaticResource("AppIcon.png", iconBytes)
 	a.SetIcon(icon)
 
-	w := a.NewWindow("img_settings")
+	w := a.NewWindow("img-settings")
 	w.Resize(fyne.NewSize(720, 520))
 	w.SetMaster()
 

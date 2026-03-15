@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"sync"
 
-	watermark "github.com/esteban-plaza/img_settings/lib"
+	watermark "github.com/esteban-plaza/img-settings/lib"
 )
 
 // Options holds the settings from the toolbar.

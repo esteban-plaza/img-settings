@@ -1,5 +1,5 @@
 ##
-## img_settings — build targets
+## img-settings — build targets
 ## Build from macOS for macOS (arm64/amd64 universal) and Windows (amd64).
 ##
 
@@ -23,15 +23,15 @@ macos: dist-dir
 	@echo "→ Building macOS arm64…"
 	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 \
 	  go build -ldflags="$(LDFLAGS)" \
-	  -o $(DIST)img_settings-darwin-arm64 $(GUI_PKG)
+	  -o $(DIST)img-settings-darwin-arm64 $(GUI_PKG)
 
 	@echo "→ Building macOS amd64…"
 	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 \
 	  go build -ldflags="$(LDFLAGS)" \
-	  -o $(DIST)img_settings-darwin-amd64 $(GUI_PKG)
+	  -o $(DIST)img-settings-darwin-amd64 $(GUI_PKG)
 
-	@echo "✓ $(DIST)img_settings-darwin-arm64 (Apple Silicon)"
-	@echo "✓ $(DIST)img_settings-darwin-amd64 (Intel)"
+	@echo "✓ $(DIST)img-settings-darwin-arm64 (Apple Silicon)"
+	@echo "✓ $(DIST)img-settings-darwin-amd64 (Intel)"
 
 ## macOS .app bundle (requires fyne CLI: make fyne-setup)
 bundle-macos: dist-dir
@@ -39,10 +39,10 @@ bundle-macos: dist-dir
 	cd gui && ~/go/bin/fyne package \
 	  -os darwin \
 	  -icon ../$(ICON) \
-	  --name img_settings \
-	  --appID io.img_settings.app
-	mv gui/img_settings.app $(DIST)
-	@echo "✓ $(DIST)img_settings.app"
+	  --name img-settings \
+	  --appID io.img-settings.app
+	mv gui/img-settings.app $(DIST)
+	@echo "✓ $(DIST)img-settings.app"
 
 ## ── Windows ──────────────────────────────────────────────────────────────────
 
@@ -52,8 +52,8 @@ windows: dist-dir check-mingw
 	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC=$(CC_WIN) \
 	  go build \
 	  -ldflags="-H windowsgui $(LDFLAGS)" \
-	  -o $(DIST)img_settings-windows-amd64.exe $(GUI_PKG)
-	@echo "✓ $(DIST)img_settings-windows-amd64.exe"
+	  -o $(DIST)img-settings-windows-amd64.exe $(GUI_PKG)
+	@echo "✓ $(DIST)img-settings-windows-amd64.exe"
 
 ## ── CLI ──────────────────────────────────────────────────────────────────────
 
@@ -61,8 +61,8 @@ windows: dist-dir check-mingw
 cli: dist-dir
 	@echo "→ Building CLI…"
 	CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" \
-	  -o $(DIST)img_settings-cli $(CLI_PKG)
-	@echo "✓ $(DIST)img_settings-cli"
+	  -o $(DIST)img-settings-cli $(CLI_PKG)
+	@echo "✓ $(DIST)img-settings-cli"
 
 ## ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -84,5 +84,5 @@ clean:
 ## Quick dev build for the current platform only
 dev: dist-dir
 	@echo "→ Dev build (native)…"
-	CGO_ENABLED=1 go build -o $(DIST)img_settings-gui-dev $(GUI_PKG)
-	@echo "✓ $(DIST)img_settings-gui-dev"
+	CGO_ENABLED=1 go build -o $(DIST)img-settings-gui-dev $(GUI_PKG)
+	@echo "✓ $(DIST)img-settings-gui-dev"

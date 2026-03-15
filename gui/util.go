@@ -9,7 +9,7 @@ import (
 
 	"fyne.io/fyne/v2"
 
-	watermark "github.com/esteban-plaza/img_settings/lib"
+	watermark "github.com/esteban-plaza/img-settings/lib"
 )
 
 // uriToPath converts a fyne.URI (file://...) to an OS filesystem path.

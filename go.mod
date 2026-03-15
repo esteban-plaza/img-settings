@@ -1,4 +1,4 @@
-module github.com/esteban-plaza/img_settings
+module github.com/esteban-plaza/img-settings
 
 go 1.21
 
