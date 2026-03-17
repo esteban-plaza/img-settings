@@ -22,7 +22,7 @@ jobs:
         with:
           fetch-depth: 0  # full history needed for semantic-release
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: lts/*
 
