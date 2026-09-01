@@ -6,7 +6,7 @@ require (
 	fyne.io/fyne/v2 v2.8.0
 	github.com/fogleman/gg v1.3.0
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
-	golang.org/x/image v0.44.0
+	golang.org/x/image v0.45.0
 )
 
 require (
@@ -42,7 +42,7 @@ require (
 	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/yuin/goldmark v1.8.2 // indirect
 	golang.org/x/net v0.35.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
