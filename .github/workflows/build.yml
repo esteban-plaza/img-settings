@@ -39,7 +39,9 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          aqtversion: "==3.3.*"
+          # aqtinstall 3.3.0 cannot install Qt 6.11 on Windows; the fix
+          # (miurahr/aqtinstall#1000) is only on master so far.
+          aqtsource: git+https://github.com/miurahr/aqtinstall.git@076e1659807d0b362a3ed684d54c2e9c775eb9c7
           setup-python: false
           version: ${{ env.QT_VERSION }}
           host: mac
@@ -130,7 +132,9 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          aqtversion: "==3.3.*"
+          # aqtinstall 3.3.0 cannot install Qt 6.11 on Windows; the fix
+          # (miurahr/aqtinstall#1000) is only on master so far.
+          aqtsource: git+https://github.com/miurahr/aqtinstall.git@076e1659807d0b362a3ed684d54c2e9c775eb9c7
           setup-python: false
           version: ${{ env.QT_VERSION }}
           host: windows
