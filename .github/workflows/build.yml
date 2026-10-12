@@ -82,6 +82,8 @@ jobs:
         run: |
           APP=build/img-settings.app
           macdeployqt "$APP" -qmldir=qt/qml -always-overwrite
+          # The app has no database access; these plugins reference missing libs.
+          rm -rf "$APP/Contents/PlugIns/sqldrivers"
           # Qt ships universal binaries; keep only the Apple Silicon slice.
           find "$APP" -type f -perm -u+x -o -type f -name '*.dylib' | while read -r f; do
             if lipo -info "$f" 2>/dev/null | grep -q 'Architectures in the fat file'; then
