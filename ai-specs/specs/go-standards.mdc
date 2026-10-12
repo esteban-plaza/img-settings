@@ -361,9 +361,9 @@ Triggered automatically when a commit is merged to `main` and semantic-release d
 
 **Steps** (`.github/workflows/release.yml`):
 1. `semantic-release` analyses commit messages and determines the next version.
-2. Two parallel build jobs run:
-   - **macOS job**: builds `img-settings-darwin-arm64`, `img-settings-darwin-amd64`, and the CLI.
-   - **Windows job**: builds `img-settings-windows-amd64.exe` and the CLI `.exe`.
+2. `build.yml` builds the Qt app (`qt/`) in two parallel jobs:
+   - **macOS job**: `img-settings-macos-arm64.dmg` (Apple Silicon).
+   - **Windows job**: `img-settings-windows-x64.zip`.
 3. All binaries are uploaded as assets to the GitHub Release created by semantic-release.
 
 **Release configuration** (`.releaserc.json`):

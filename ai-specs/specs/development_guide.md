@@ -142,8 +142,9 @@ gui/           # Fyne GUI — CGO required
 cli/           # CLI — CGO=0 single static binary
 .github/
   workflows/
-    ci.yml       # go vet + build checks (push & PR)
-    release.yml  # semantic-release + cross-platform binaries
+    build.yml    # Qt app build + packaging (macOS arm64, Windows x64)
+    ci.yml       # runs build.yml on PRs
+    release.yml  # semantic-release + build.yml + release assets
 docs/          # User guides (EN + ES)
 scripts/       # Screenshot automation, sample generation
 dist/          # Build outputs (git-ignored)
@@ -212,8 +213,8 @@ Releases are fully automated via semantic-release and GitHub Actions.
 2. `release.yml` runs semantic-release, which:
    - Determines the next semver version from commit messages.
    - Creates a GitHub Release with auto-generated release notes.
-   - Triggers parallel build jobs for macOS (arm64/amd64) and Windows (amd64).
-   - Uploads all binaries as release assets.
+   - Builds the Qt app (`qt/`) via `build.yml`: macOS Apple Silicon (`.dmg`) and Windows x64 (`.zip`).
+   - Uploads both packages as release assets.
 3. No manual version bumping — the commit message type drives the version.
 
 | Commit type | Version bump |
