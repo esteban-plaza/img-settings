@@ -51,7 +51,7 @@ jobs:
           cache: true
 
       - name: Restore vcpkg cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: vcpkg-cache
           key: vcpkg-${{ env.TRIPLET }}-${{ env.MACOSX_DEPLOYMENT_TARGET }}-${{ env.VCPKG_COMMIT }}
@@ -150,7 +150,7 @@ jobs:
           cache: true
 
       - name: Restore vcpkg cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: vcpkg-cache
           key: vcpkg-${{ env.TRIPLET }}-${{ env.VCPKG_COMMIT }}
