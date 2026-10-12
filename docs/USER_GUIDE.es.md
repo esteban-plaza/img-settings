@@ -8,19 +8,18 @@
 
 1. [¿Qué es img-settings?](#1-qué-es-img-settings)
 2. [Instalación](#2-instalación)
-3. [Usar la aplicación (interfaz gráfica)](#3-usar-la-aplicación-interfaz-gráfica)
-4. [Usar la línea de comandos (CLI)](#4-usar-la-línea-de-comandos-cli)
-5. [Entendiendo la marca de agua](#5-entendiendo-la-marca-de-agua)
-6. [Trabajar con archivos RAW de Sony (ARW)](#6-trabajar-con-archivos-raw-de-sony-arw)
-7. [Solución de problemas](#7-solución-de-problemas)
+3. [Cómo usar la app](#3-cómo-usar-la-app)
+4. [Cómo leer la marca de agua](#4-cómo-leer-la-marca-de-agua)
+5. [Formatos soportados](#5-formatos-soportados)
+6. [Solución de problemas](#6-solución-de-problemas)
 
 ---
 
 ## 1. ¿Qué es img-settings?
 
-img-settings es una herramienta que toma tus fotos y les agrega una marca de agua discreta con los datos de la cámara con la que fueron tomadas — apertura, velocidad de obturación, ISO, distancia focal y modelo de cámara. El resultado se exporta como JPG optimizado para WhatsApp HD (máx. 2560 px en el lado más largo, calidad 92).
+img-settings es una app que toma tus fotos y les agrega una marca de agua discreta con los datos de la cámara con la que fueron tomadas — apertura, velocidad de obturación, ISO, distancia focal y modelo de cámara. El resultado se exporta como JPG optimizado para WhatsApp HD (máx. 2560 px en el lado más largo, calidad 92).
 
-Funciona con archivos JPG, PNG y ARW (RAW de Sony).
+Funciona con archivos JPG, PNG, JPEG XL y ARW (RAW de Sony), en macOS y Windows.
 
 ---
 
@@ -32,150 +31,104 @@ Entrá a la [página de Releases](https://github.com/esteban-plaza/img-settings/
 
 | Sistema | Archivo a descargar |
 |---|---|
-| Mac con Apple Silicon (M1/M2/M3/M4) | `img-settings-darwin-arm64` |
-| Mac con procesador Intel | `img-settings-darwin-amd64` |
-| Windows | `img-settings-windows-amd64.exe` |
+| Mac con Apple Silicon (M1 o posterior), macOS 13 Ventura o superior | `img-settings-macos-arm64.dmg` |
+| Windows 10 u 11, 64 bits | `img-settings-windows-x64.zip` |
 
-¿No sabés qué Mac tenés? Hacé clic en el menú  → **Acerca de esta Mac**. Si dice "Apple M..." tenés Apple Silicon. Si dice "Intel" tenés un Mac Intel.
+¿No sabés qué Mac tenés? Hacé clic en el menú  → **Acerca de esta Mac**. Si dice "Apple M…" tenés Apple Silicon. Las Mac con procesador Intel no están soportadas.
 
-### Primera apertura en macOS
+### macOS
 
-macOS bloquea la app la primera vez porque fue descargada de internet y no está firmada con un certificado de desarrollador Apple. Para permitirla:
+1. Abrí `img-settings-macos-arm64.dmg`
+2. Arrastrá **img-settings** a la carpeta **Aplicaciones**
 
-**Opción A — Terminal (más rápido):**
-```bash
-xattr -d com.apple.quarantine ~/Downloads/img-settings-darwin-arm64
-chmod +x ~/Downloads/img-settings-darwin-arm64
-```
+macOS bloquea la app la primera vez porque fue descargada de internet y no está firmada con un certificado de desarrollador de Apple. Para permitirla:
 
-Luego hacé doble clic en el archivo para abrirlo.
-
-**Opción B — Configuración del sistema:**
-1. Intentá abrir la app — macOS la bloqueará y mostrará una alerta
+**Opción A — Configuración del Sistema:**
+1. Abrí img-settings — macOS la bloquea y muestra una alerta
 2. Abrí **Configuración del Sistema → Privacidad y seguridad**
 3. Bajá hasta la sección de seguridad y hacé clic en **Abrir de todos modos**
 
+**Opción B — Terminal:**
+```bash
+xattr -d com.apple.quarantine /Applications/img-settings.app
+```
+
 ### Windows
 
-Hacé doble clic en `img-settings-windows-amd64.exe`. Si Windows Defender SmartScreen muestra una advertencia, hacé clic en **Más información → Ejecutar de todos modos**.
+1. Hacé clic derecho en `img-settings-windows-x64.zip` → **Extraer todo…**
+2. Abrí la carpeta `img-settings` que se extrajo y hacé doble clic en `img-settings.exe`
+
+Dejá `img-settings.exe` dentro de su carpeta — necesita los archivos que tiene al lado. Si Windows Defender SmartScreen muestra una advertencia, hacé clic en **Más información → Ejecutar de todos modos**.
 
 ---
 
-## 3. Usar la aplicación (interfaz gráfica)
+## 3. Cómo usar la app
 
-### Agregar tus fotos
+La app se ve nativa en cada sistema: estilo Liquid Glass de Apple en macOS y estilo Windows 11 en Windows. Las dos funcionan igual. Los textos de la app están en inglés.
 
-![Zona de arrastre — lista para recibir fotos](assets/screenshot-dropzone.png)
+### Agregá tus fotos
 
-Al abrir la app verás una zona de arrastre grande en el centro de la ventana. Podés:
+![Zona para soltar en macOS](assets/screenshot-macos-dropzone.png)
 
-- **Arrastrar y soltar** una o más fotos directamente en la ventana
+![Zona para soltar en Windows](assets/screenshot-windows-dropzone.png)
+
+Podés:
+
+- **Arrastrar y soltar** una o más fotos en la ventana
 - **Arrastrar y soltar una carpeta** para procesar todas las fotos que contiene
-- **Hacer clic en la zona** para abrir el explorador de carpetas
+- **Hacer clic en la zona para soltar** (macOS) o en **Choose folder…** (Windows) para elegir una carpeta
+- Hacer clic en **Choose Photos…** para elegir fotos sueltas
+- Apretar **⌘O** (macOS) o **Ctrl+O** (Windows) para abrir el selector de carpetas
 
-La app empieza a procesar inmediatamente después de que soltás los archivos.
-
-### Barra de configuración
-
-En la parte inferior de la ventana hay una barra con tres opciones:
-
-#### Subfolders (Subcarpetas)
-Cuando arrastrás una carpeta, esta opción controla si la app también busca fotos dentro de las subcarpetas.
-
-- **Desactivado (por defecto):** solo procesa las fotos que están directamente dentro de la carpeta que soltaste
-- **Activado:** encuentra todas las fotos en cada subcarpeta de forma recursiva
-
-#### Opacity (Opacidad)
-Controla qué tan visible es la marca de agua, de 0% (invisible) a 100% (completamente opaca). El valor por defecto es **82%**, que da un aspecto limpio sin ser demasiado intrusivo.
-
-Mové el slider hacia la izquierda para hacer la marca de agua más transparente, o hacia la derecha para hacerla más visible.
-
-#### Output (Carpeta de salida)
-La carpeta donde se guardarán las fotos procesadas.
-
-- **Por defecto:** se crea automáticamente una carpeta `out/` dentro de la carpeta que soltaste
-- **Personalizado:** hacé clic en el ícono de carpeta para elegir un destino diferente
-- **Resetear:** hacé clic en el botón × para volver al valor automático
-
-> Las fotos originales nunca se modifican. img-settings siempre escribe en la carpeta de salida.
-
-### Progreso y resultados
-
-![Procesando archivos](assets/screenshot-processing.png)
-
-Una vez que empieza el procesamiento, la zona de arrastre se reemplaza por una barra de progreso y una lista de archivos. Cada archivo muestra:
-
-- ✓ y el tamaño del archivo cuando termina correctamente
-- ✗ y un mensaje de error si algo salió mal
-
-![Listo — todos los archivos procesados](assets/screenshot-done.png)
-
-Cuando terminan todos los archivos, aparecen dos botones:
-
-- **Reveal in Finder / Open in Explorer** — abre la carpeta de salida para que veas tus fotos
-- **Process more** — vuelve a la zona de arrastre para procesar otro lote
-
----
-
-## 4. Usar la línea de comandos (CLI)
-
-La versión CLI es para usuarios que prefieren la terminal o quieren automatizar el procesamiento por lotes.
-
-### Uso básico
-
-```bash
-# Procesar todas las fotos de una carpeta
-img-settings-cli-macos /ruta/a/fotos/
-
-# Procesar un archivo individual
-img-settings-cli-macos foto.jpg
-
-# Procesar varias carpetas a la vez
-img-settings-cli-macos ~/Desktop/sesion1/ ~/Desktop/sesion2/
-```
+Las etiquetas debajo de la zona para soltar (macOS) o el texto debajo (Windows) muestran los formatos que soporta esta versión. El procesamiento empieza enseguida.
 
 ### Opciones
 
-| Opción | Por defecto | Descripción |
-|---|---|---|
-| `-out <carpeta>` | `out/` | Dónde guardar las fotos procesadas |
-| `-opacity <0.0–1.0>` | `0.82` | Opacidad de la marca de agua (0 = invisible, 1 = completamente opaca) |
+La barra de opciones está en la parte inferior de la ventana.
 
-### Ejemplos
+#### Subfolders
+Cuando agregás una carpeta, esta opción define si la app también busca dentro de sus subcarpetas.
 
-```bash
-# Guardar en una carpeta específica
-img-settings-cli-macos -out ~/Desktop/con-marca/ ~/Fotos/sesion/
+- **Desactivado (por defecto):** solo las fotos que están directamente en la carpeta
+- **Activado:** todas las fotos de todas las subcarpetas
 
-# Marca de agua más transparente
-img-settings-cli-macos -opacity 0.5 foto.jpg
+#### Opacity
+Qué tan visible es el fondo de la marca de agua, de 0% a 100%. El valor por defecto es **82%**, que se ve prolijo sin ser invasivo.
 
-# Combinar opciones
-img-settings-cli-macos -out ~/Desktop/out -opacity 0.9 ~/Fotos/
-```
+#### Output (macOS) / Save to (Windows)
+La carpeta donde se guardan las fotos procesadas.
 
-### Salida en consola
+- **Por defecto — "Auto (./out)":** se crea una carpeta `out/` junto a tus fotos (dentro de la carpeta que agregaste, o junto a la primera foto)
+- **Personalizada:** hacé clic en el botón para elegir otra carpeta
+- **Volver a automático:** hacé clic en la **×** al lado de la carpeta (macOS) o en **Reset** (Windows)
 
-La CLI imprime una línea por cada archivo a medida que termina:
+> Las fotos originales nunca se modifican. Las fotos que ya están dentro de la carpeta de salida se saltean, así que procesar dos veces la misma carpeta no les pone la marca dos veces.
 
-```
-processing 12 file(s) → out/  [8 workers]
+### Progreso y resultados
 
-  DSC00123.ARW                              OK  (2.1 MB)
-  DSC00124.ARW                              OK  (1.9 MB)
-  DSC00125.jpg                              OK  (0.8 MB)
-  ...
+![Procesando en macOS](assets/screenshot-macos-processing.png)
 
-done: 12 ok, 0 failed
-```
+Mientras trabaja, la ventana muestra una barra de progreso y una grilla con la vista previa y el tamaño de cada foto terminada. Se procesan varias fotos en paralelo. Hacé clic en **Stop** (o apretá **Esc**) para cancelar las que faltan.
+
+Si una foto no se puede procesar, su recuadro muestra un ícono de error — pasá el mouse por encima para ver el motivo.
+
+![Terminado en macOS](assets/screenshot-macos-done.png)
+
+![Terminado en Windows](assets/screenshot-windows-done.png)
+
+Cuando termina:
+
+- **Reveal in Finder / Open in File Explorer** — abre la carpeta de salida
+- **Process More** — vuelve al inicio para procesar otro lote
+- Hacé clic en una vista previa para abrir esa foto
 
 ---
 
-## 5. Entendiendo la marca de agua
+## 4. Cómo leer la marca de agua
 
-La marca de agua es una etiqueta oscura en forma de píldora ubicada en la **parte inferior central** de la imagen. Muestra la siguiente información cuando está disponible en los datos EXIF de la foto:
+La marca de agua es una etiqueta oscura con forma de píldora ubicada en la **parte inferior central** de la imagen. Muestra estos datos cuando están en el EXIF de la foto:
 
-| Ícono | Campo | Ejemplo |
+| Ícono | Dato | Ejemplo |
 |---|---|---|
 | Cámara | Modelo de cámara | ILCE-7RM5 |
 | Diafragma | Apertura | f/2.8 |
@@ -183,23 +136,34 @@ La marca de agua es una etiqueta oscura en forma de píldora ubicada en la **par
 | Chip | ISO | ISO 400 |
 | Círculos de lente | Distancia focal | 85mm |
 
-**Los campos sin datos simplemente no se muestran.** Si una foto no tiene datos EXIF (por ejemplo, una captura de pantalla), se exporta tal cual sin ninguna marca de agua.
+**Los datos que faltan simplemente no se muestran.** Si una foto no tiene nada de EXIF (por ejemplo, una captura de pantalla), se exporta sin marca de agua.
 
-El tamaño de la marca de agua se adapta automáticamente a la imagen — escala con la altura de la foto y reduce la tipografía si es necesario para que todo entre dentro del ancho de la imagen.
+El tamaño de la marca se adapta a la imagen: escala con la altura y achica el texto si hace falta para que todo entre en el ancho.
+
+Las fotos se rotan según su orientación EXIF, así que las verticales salen derechas.
 
 ---
 
-## 6. Trabajar con archivos RAW de Sony (ARW)
+## 5. Formatos soportados
 
-img-settings soporta archivos ARW de Sony. Prueba tres métodos en orden:
+| Formato | Notas |
+|---|---|
+| JPG / JPEG | |
+| PNG | El EXIF se lee del bloque `eXIf` si existe |
+| JPEG XL (`.jxl`) | El EXIF se lee aunque esté comprimido; las imágenes de gama amplia y HDR se convierten a sRGB |
+| ARW (RAW de Sony) | Ver abajo |
 
-1. **Preview JPEG embebido** — la mayoría de las cámaras Sony incluyen un JPEG de resolución completa dentro del archivo ARW. img-settings lo extrae directamente, lo cual es rápido y no requiere herramientas adicionales.
+El resultado siempre es JPG.
 
-2. **dcraw** — si no se encuentra un preview utilizable, img-settings intenta usar dcraw para decodificar los datos RAW.
+### Archivos RAW de Sony (ARW)
 
-3. **ImageMagick** — si dcraw no está instalado, recurre a ImageMagick.
+img-settings prueba tres métodos en orden:
 
-Si ninguno funciona, el archivo se omite con un mensaje de error. Para instalar las herramientas de respaldo en macOS:
+1. **Vista previa JPEG embebida** — la mayoría de las cámaras Sony guardan un JPEG en resolución completa dentro del ARW. img-settings lo extrae directamente; es rápido y no necesita herramientas extra.
+2. **dcraw** — si no encuentra una vista previa útil, usa dcraw para decodificar el RAW.
+3. **ImageMagick** — si dcraw no está instalado, usa ImageMagick.
+
+Para instalar estas herramientas en macOS:
 
 ```bash
 brew install dcraw
@@ -209,19 +173,22 @@ brew install imagemagick
 
 ---
 
-## 7. Solución de problemas
+## 6. Solución de problemas
 
 **La app no abre en macOS**
-Seguí los pasos en [Primera apertura en macOS](#primera-apertura-en-macos). macOS bloquea las apps que no están firmadas con un certificado de desarrollador Apple.
+Seguí los pasos de [macOS](#macos). macOS bloquea las apps que no están firmadas con un certificado de desarrollador de Apple.
 
-**La marca de agua no aparece**
-La foto probablemente no tiene datos EXIF. Esto puede ocurrir con capturas de pantalla, fotos exportadas desde algunas aplicaciones, o imágenes que tuvieron sus metadatos eliminados. Probá con una foto tomada directamente con una cámara o teléfono.
+**La app no arranca en Windows**
+Asegurate de haber extraído todo el `.zip` y de ejecutar `img-settings.exe` desde la carpeta extraída — no funciona si lo abrís desde adentro del zip o si movés el `.exe` solo.
 
-**Los archivos ARW se omiten con un error**
-Instalá dcraw o ImageMagick (ver [Trabajar con archivos RAW de Sony](#6-trabajar-con-archivos-raw-de-sony-arw)).
+**No aparece la marca de agua**
+Seguramente la foto no tiene datos EXIF. Pasa con capturas de pantalla, fotos exportadas desde algunas apps o imágenes a las que les borraron los metadatos. Probá con una foto sacada directamente con una cámara o un celular.
 
-**La foto de salida tiene el mismo tamaño que el original**
-Si tu foto ya es de 2560 px o menos en su lado más largo, img-settings no la redimensiona. El redimensionado solo se aplica a imágenes más grandes.
+**"No supported photos found"**
+Los archivos o la carpeta que agregaste no tienen fotos en formatos soportados. Si las fotos están en subcarpetas, activá **Subfolders**.
 
-**Solté una carpeta pero algunas fotos no se procesaron**
-Verificá que las fotos estén en un formato soportado (JPG, PNG, ARW). Si están en subcarpetas, asegurate de tener el toggle **Subfolders** activado.
+**Los archivos ARW muestran un error**
+Instalá dcraw o ImageMagick (ver [Archivos RAW de Sony](#archivos-raw-de-sony-arw)).
+
+**La foto procesada tiene el mismo tamaño que la original**
+Si tu foto ya mide 2560 px o menos en su lado más largo, img-settings no la redimensiona.

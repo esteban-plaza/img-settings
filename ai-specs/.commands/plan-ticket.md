@@ -15,11 +15,11 @@ Given a ticket ID and its description, this command generates a detailed, step-b
 ## Instructions for the AI
 
 1. **Read the ticket**: Ask the user for the ticket description if not already provided.
-2. **Read the relevant source files**: Use the architecture in `go-standards.mdc` to identify which packages and files are affected.
+2. **Read the relevant source files**: Use the architecture in `qt-standards.mdc` to identify which files are affected.
 3. **Identify the scope**:
-   - Which functions in `lib/` need to change?
-   - Does the GUI processor need updating?
-   - Does the CLI need a new flag or behaviour?
+   - Which engine functions (`src/exif.*`, `src/watermark.*`, `src/jxl.*`) need to change?
+   - Does `Processor` (`src/processor.*`) need a new property, signal or invokable?
+   - Which QML files change, and does the change apply to both the macOS and the Windows shell?
    - Are new tests required?
 4. **Generate the plan** with the following sections:
 
@@ -36,17 +36,17 @@ Given a ticket ID and its description, this command generates a detailed, step-b
 **Key principles applied:**
 - TDD: failing test before implementation
 - Baby steps: one commit per step
-- lib/ isolation: core logic stays in lib/, no GUI imports
+- Engine isolation: core logic stays in the engine, no QML / Qt Quick dependencies
 
 ## Architecture Context
 
 ### Files to Modify
-- `lib/watermark.go` — <reason>
-- `gui/processor.go` — <reason>
-- `cli/main.go` — <reason>
+- `src/watermark.cpp` — <reason>
+- `src/processor.cpp` — <reason>
+- `qml/MacShell.qml` / `qml/WindowsShell.qml` — <reason>
 
-### New Files to Create
-- `lib/watermark_test.go` — unit tests for new functions
+### Tests to Add
+- `tests/tst_engine.cpp` — test cases for new or changed engine functions
 
 ## Implementation Steps
 
@@ -57,41 +57,41 @@ git checkout -b feature/<ticket-id>-<short-description>
 ---
 
 ### Step 1: Write Failing Tests
-File: `lib/watermark_test.go`
-Action: Add table-driven tests for the new/changed function.
+File: `tests/tst_engine.cpp`
+Action: Add data-driven Qt tests (`_data()` + `QFETCH`) for the new/changed function.
 Tests must fail before the implementation exists.
 
 ---
 
 ### Step N: Implement <function name>
-File: `lib/watermark.go`
+File: `src/watermark.cpp` (+ `src/watermark.h`)
 Action: <detailed description>
 Expected function signature: ...
 Implementation notes: ...
 
 ---
 
-### Step N+1: Update GUI / CLI (if needed)
+### Step N+1: Update Processor / QML (if needed)
 ...
 
 ---
 
 ### Step N+2: Verify
-go vet ./...
-go test ./lib/ -coverprofile=coverage.out
-go tool cover -func=coverage.out  # verify ≥ 80% for lib/
+make test
+open build/img-settings.app                                   # macOS look
+IMG_SETTINGS_STYLE=windows build/img-settings.app/Contents/MacOS/img-settings  # Windows look
 
 ---
 
 ### Step N+3: Commit
 git add <files>
-git commit -m "feat(lib): <subject>"
+git commit -m "feat(engine): <subject>"
 
 ## Definition of Done
 - [ ] Tests written and passing
-- [ ] go vet clean
-- [ ] lib/ coverage ≥ 80%
-- [ ] Exported symbols have doc comments
+- [ ] No new compiler or QML warnings
+- [ ] Public engine functions have a contract comment
+- [ ] UI checked in both styles (if QML changed)
 - [ ] USER_GUIDE updated if user-facing behaviour changed
 - [ ] Commit follows Conventional Commits format
 ```

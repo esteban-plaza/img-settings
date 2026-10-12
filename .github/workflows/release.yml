@@ -32,88 +32,31 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ── 2. macOS universal binary + .app bundle ─────────────────────────────────
-  build-macos:
-    name: Build macOS
+  # ── 2. macOS Apple Silicon + Windows x64 builds ─────────────────────────────
+  build:
+    name: Build
     needs: semantic-release
     if: needs.semantic-release.outputs.released == 'true'
-    runs-on: macos-latest
-    env:
-      VERSION: ${{ needs.semantic-release.outputs.version }}
+    uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ needs.semantic-release.outputs.version }}
+
+  # ── 3. Attach the packages to the GitHub release ────────────────────────────
+  publish:
+    name: Upload release assets
+    needs: [semantic-release, build]
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-go@v6
+      - uses: actions/download-artifact@v4
         with:
-          go-version-file: go.mod
-          cache: true
+          path: dist
+          merge-multiple: true
 
-      - name: Create dist dir
-        run: mkdir -p dist
-
-      - name: Build arm64
-        run: |
-          CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 \
-            go build -ldflags="-s -w -X main.version=$VERSION" \
-            -o dist/img-settings-darwin-arm64 ./gui/
-
-      - name: Build amd64
-        run: |
-          CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 \
-            go build -ldflags="-s -w -X main.version=$VERSION" \
-            -o dist/img-settings-darwin-amd64 ./gui/
-
-      - name: Build CLI
-        run: |
-          CGO_ENABLED=0 go build -ldflags="-s -w -X main.version=$VERSION" \
-            -o dist/img-settings-cli-macos ./cli/
-
-      - name: Upload macOS artifacts
+      - name: Upload to release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ env.VERSION }}
+          tag_name: v${{ needs.semantic-release.outputs.version }}
           files: |
-            dist/img-settings-darwin-arm64
-            dist/img-settings-darwin-amd64
-            dist/img-settings-cli-macos
-
-  # ── 3. Windows .exe ─────────────────────────────────────────────────────────
-  build-windows:
-    name: Build Windows
-    needs: semantic-release
-    if: needs.semantic-release.outputs.released == 'true'
-    runs-on: windows-latest
-    env:
-      VERSION: ${{ needs.semantic-release.outputs.version }}
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Create dist dir
-        run: mkdir -p dist
-
-      - name: Build GUI
-        run: |
-          go build -ldflags="-H windowsgui -s -w -X main.version=$env:VERSION" `
-            -o dist/img-settings-windows-amd64.exe ./gui/
-        env:
-          CGO_ENABLED: "1"
-
-      - name: Build CLI
-        run: |
-          go build -ldflags="-s -w -X main.version=$env:VERSION" `
-            -o dist/img-settings-cli-windows.exe ./cli/
-        env:
-          CGO_ENABLED: "0"
-
-      - name: Upload Windows artifacts
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ env.VERSION }}
-          files: |
-            dist/img-settings-windows-amd64.exe
-            dist/img-settings-cli-windows.exe
+            dist/img-settings-macos-arm64.dmg
+            dist/img-settings-windows-x64.zip
+          fail_on_unmatched_files: true

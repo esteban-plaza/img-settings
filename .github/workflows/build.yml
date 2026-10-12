@@ -1,0 +1,225 @@
+name: Build
+
+# Builds the Qt app for macOS (Apple Silicon) and Windows (x64) and uploads the
+# packaged results as workflow artifacts. Called by ci.yml and release.yml.
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: Version embedded in the app (semantic-release version)
+        type: string
+        default: "0.0.0"
+
+env:
+  QT_VERSION: "6.11.2"
+  # Pinned vcpkg commit: provides libjxl (JPEG XL) as static libraries.
+  VCPKG_COMMIT: e456309491fd875487bf02b8a0dca76c1b1b00cc
+
+jobs:
+  # ── macOS Apple Silicon .dmg ────────────────────────────────────────────────
+  macos:
+    name: macOS (Apple Silicon)
+    runs-on: macos-15
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "13.0"
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/vcpkg-cache
+      VCPKG_KEEP_ENV_VARS: MACOSX_DEPLOYMENT_TARGET
+      TRIPLET: arm64-osx
+    steps:
+      - uses: actions/checkout@v6
+
+      # aqtinstall (used by install-qt-action) does not support the runner's
+      # default Python yet.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          # aqtinstall 3.3.0 cannot install Qt 6.11 on Windows; the fix
+          # (miurahr/aqtinstall#1000) is only on master so far.
+          aqtsource: git+https://github.com/miurahr/aqtinstall.git@076e1659807d0b362a3ed684d54c2e9c775eb9c7
+          setup-python: false
+          version: ${{ env.QT_VERSION }}
+          host: mac
+          target: desktop
+          arch: clang_64
+          modules: qtshadertools
+          cache: true
+
+      - name: Restore vcpkg cache
+        uses: actions/cache@v4
+        with:
+          path: vcpkg-cache
+          key: vcpkg-${{ env.TRIPLET }}-${{ env.MACOSX_DEPLOYMENT_TARGET }}-${{ env.VCPKG_COMMIT }}
+
+      - name: Build libjxl (vcpkg)
+        run: |
+          mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
+          git clone https://github.com/microsoft/vcpkg "$VCPKG_ROOT"
+          git -C "$VCPKG_ROOT" checkout "$VCPKG_COMMIT"
+          "$VCPKG_ROOT/bootstrap-vcpkg.sh" -disableMetrics
+          "$VCPKG_ROOT/vcpkg" install libjxl pkgconf --triplet "$TRIPLET"
+
+      - name: Configure
+        run: |
+          VCPKG_INSTALLED="$VCPKG_ROOT/installed/$TRIPLET"
+          PKG_CONFIG_PATH="$VCPKG_INSTALLED/lib/pkgconfig" \
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DAPP_VERSION=${{ inputs.version }} \
+            -DPKG_CONFIG_EXECUTABLE="$VCPKG_INSTALLED/tools/pkgconf/pkgconf" \
+            -DREQUIRE_JXL=ON -DJXL_STATIC=ON
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Unit tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Bundle Qt into the app
+        run: |
+          APP=build/img-settings.app
+          macdeployqt "$APP" -qmldir=qml -always-overwrite
+          # The app has no database access; these plugins reference missing libs.
+          rm -rf "$APP/Contents/PlugIns/sqldrivers"
+          # Qt ships universal binaries; keep only the Apple Silicon slice.
+          find "$APP" -type f -perm -u+x -o -type f -name '*.dylib' | while read -r f; do
+            if lipo -info "$f" 2>/dev/null | grep -q 'Architectures in the fat file'; then
+              lipo "$f" -thin arm64 -output "$f"
+            fi
+          done
+          # Ad-hoc signature (Apple Silicon refuses to run unsigned code).
+          codesign --force --deep --sign - "$APP"
+          otool -L "$APP/Contents/MacOS/img-settings"
+
+      # Unset the Qt paths set by install-qt-action so only the bundled Qt is used.
+      - name: Smoke test
+        run: env -u QT_PLUGIN_PATH -u QML2_IMPORT_PATH build/img-settings.app/Contents/MacOS/img-settings --smoke-test
+
+      - name: Package .dmg
+        run: |
+          mkdir -p dist/dmg
+          cp -R build/img-settings.app dist/dmg/
+          ln -s /Applications dist/dmg/Applications
+          hdiutil create -volname img-settings -srcfolder dist/dmg -ov -format UDZO \
+            dist/img-settings-macos-arm64.dmg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: img-settings-macos-arm64
+          path: dist/img-settings-macos-arm64.dmg
+          if-no-files-found: error
+
+  # ── Windows x64 .zip ────────────────────────────────────────────────────────
+  windows:
+    name: Windows (x64)
+    runs-on: windows-2025
+    env:
+      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\vcpkg-cache
+      TRIPLET: x64-windows-static-md
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v6
+
+      # aqtinstall (used by install-qt-action) does not support the runner's
+      # default Python yet.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          # aqtinstall 3.3.0 cannot install Qt 6.11 on Windows; the fix
+          # (miurahr/aqtinstall#1000) is only on master so far.
+          aqtsource: git+https://github.com/miurahr/aqtinstall.git@076e1659807d0b362a3ed684d54c2e9c775eb9c7
+          setup-python: false
+          version: ${{ env.QT_VERSION }}
+          host: windows
+          target: desktop
+          arch: win64_msvc2022_64
+          modules: qtshadertools
+          cache: true
+
+      - name: Restore vcpkg cache
+        uses: actions/cache@v4
+        with:
+          path: vcpkg-cache
+          key: vcpkg-${{ env.TRIPLET }}-${{ env.VCPKG_COMMIT }}
+
+      - name: Build libjxl (vcpkg)
+        run: |
+          New-Item -ItemType Directory -Force $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
+          git clone https://github.com/microsoft/vcpkg $env:VCPKG_ROOT
+          git -C $env:VCPKG_ROOT checkout $env:VCPKG_COMMIT
+          & "$env:VCPKG_ROOT\bootstrap-vcpkg.bat" -disableMetrics
+          & "$env:VCPKG_ROOT\vcpkg.exe" install libjxl pkgconf --triplet $env:TRIPLET
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Configure
+        run: |
+          $installed = "$env:VCPKG_ROOT\installed\$env:TRIPLET"
+          $env:PKG_CONFIG_PATH = "$installed\lib\pkgconfig"
+          cmake -S . -B build -A x64 `
+            -DAPP_VERSION=${{ inputs.version }} `
+            -DPKG_CONFIG_EXECUTABLE="$installed\tools\pkgconf\pkgconf.exe" `
+            -DREQUIRE_JXL=ON -DJXL_STATIC=ON
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Unit tests
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Bundle Qt and the MSVC runtime
+        run: |
+          $out = "dist\img-settings"
+          New-Item -ItemType Directory -Force $out | Out-Null
+          Copy-Item build\Release\img-settings.exe $out
+          windeployqt --release --qmldir qml --no-translations --no-system-d3d-compiler --no-opengl-sw "$out\img-settings.exe"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+          # The Windows 11 style is picked at runtime (QQuickStyle), so the QML
+          # import scanner cannot see it: deploy it explicitly.
+          $qml = "$env:QT_ROOT_DIR\qml\QtQuick\Controls\FluentWinUI3"
+          Copy-Item -Recurse -Force $qml "$out\qml\QtQuick\Controls\"
+          Copy-Item -Force "$env:QT_ROOT_DIR\bin\Qt6QuickControls2FluentWinUI3StyleImpl.dll" $out
+          Get-ChildItem $out -Recurse -Filter *.pdb | Remove-Item
+
+          # App-local Visual C++ runtime, so no separate redistributable is needed.
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          $crt = Get-ChildItem "$vs\VC\Redist\MSVC" -Recurse -Directory -Filter Microsoft.VC*.CRT |
+            Where-Object { $_.FullName -match '\\x64\\' -and $_.FullName -notmatch 'onecore|debug' } |
+            Select-Object -First 1
+          Copy-Item "$($crt.FullName)\*.dll" $out
+          Get-ChildItem $out
+
+      - name: Smoke test
+        run: |
+          # Only the bundled Qt may be used: drop the paths set by install-qt-action.
+          Remove-Item Env:QT_PLUGIN_PATH, Env:QML2_IMPORT_PATH -ErrorAction SilentlyContinue
+          $env:QT_FORCE_STDERR_LOGGING = "1"
+          $p = Start-Process dist\img-settings\img-settings.exe -ArgumentList "--smoke-test" `
+            -PassThru -RedirectStandardError smoke.log
+          $null = $p.Handle  # keeps ExitCode readable after the process exits
+          if (-not $p.WaitForExit(60000)) { $p.Kill(); Get-Content smoke.log; throw "smoke test timed out" }
+          Get-Content smoke.log
+          if ($p.ExitCode -ne 0) { throw "smoke test failed with exit code $($p.ExitCode)" }
+
+      - name: Package .zip
+        run: Compress-Archive -Path dist\img-settings -DestinationPath dist\img-settings-windows-x64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: img-settings-windows-x64
+          path: dist/img-settings-windows-x64.zip
+          if-no-files-found: error

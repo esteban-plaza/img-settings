@@ -1,88 +1,31 @@
 ##
-## img-settings — build targets
-## Build from macOS for macOS (arm64/amd64 universal) and Windows (amd64).
+## img-settings — developer shortcuts around CMake
+## Requires Qt 6.9+ (with Qt Shader Tools) and CMake. libjxl is optional.
+##   macOS: brew install qt cmake jpeg-xl pkgconf
 ##
 
-GUI_PKG    := ./gui/
-CLI_PKG    := ./cli/
-DIST       := dist/
-ICON       := gui/assets/AppIcon.png
-CC_WIN     := x86_64-w64-mingw32-gcc
-VERSION    := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
-LDFLAGS    := -s -w -X main.version=$(VERSION)
+BUILD      := build
+CMAKE_ARGS ?=
 
-.PHONY: all macos windows cli bundle-macos clean fyne-setup check-mingw
+.PHONY: all configure build test run clean
 
-## Build everything
-all: macos windows cli
+all: build
 
-## ── macOS ────────────────────────────────────────────────────────────────────
+## Configure the CMake build directory (Release)
+configure:
+	cmake -S . -B $(BUILD) -DCMAKE_BUILD_TYPE=Release $(CMAKE_ARGS)
 
-## Native macOS universal binary (arm64 + amd64 joined with lipo)
-macos: dist-dir
-	@echo "→ Building macOS arm64…"
-	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 \
-	  go build -ldflags="$(LDFLAGS)" \
-	  -o $(DIST)img-settings-darwin-arm64 $(GUI_PKG)
+## Build the app and the unit tests
+build: configure
+	cmake --build $(BUILD) --parallel
 
-	@echo "→ Building macOS amd64…"
-	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 \
-	  go build -ldflags="$(LDFLAGS)" \
-	  -o $(DIST)img-settings-darwin-amd64 $(GUI_PKG)
+## Run the engine unit tests
+test: build
+	ctest --test-dir $(BUILD) --output-on-failure
 
-	@echo "✓ $(DIST)img-settings-darwin-arm64 (Apple Silicon)"
-	@echo "✓ $(DIST)img-settings-darwin-amd64 (Intel)"
-
-## macOS .app bundle (requires fyne CLI: make fyne-setup)
-bundle-macos: dist-dir
-	@echo "→ Packaging macOS .app bundle…"
-	cd gui && ~/go/bin/fyne package \
-	  -os darwin \
-	  -icon ../$(ICON) \
-	  --name img-settings \
-	  --appID io.img-settings.app
-	mv gui/img-settings.app $(DIST)
-	@echo "✓ $(DIST)img-settings.app"
-
-## ── Windows ──────────────────────────────────────────────────────────────────
-
-## Windows amd64 cross-compile (requires mingw-w64: brew install mingw-w64)
-windows: dist-dir check-mingw
-	@echo "→ Building Windows amd64…"
-	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC=$(CC_WIN) \
-	  go build \
-	  -ldflags="-H windowsgui $(LDFLAGS)" \
-	  -o $(DIST)img-settings-windows-amd64.exe $(GUI_PKG)
-	@echo "✓ $(DIST)img-settings-windows-amd64.exe"
-
-## ── CLI ──────────────────────────────────────────────────────────────────────
-
-## CLI binary (no CGO needed)
-cli: dist-dir
-	@echo "→ Building CLI…"
-	CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" \
-	  -o $(DIST)img-settings-cli $(CLI_PKG)
-	@echo "✓ $(DIST)img-settings-cli"
-
-## ── Helpers ──────────────────────────────────────────────────────────────────
-
-dist-dir:
-	@mkdir -p $(DIST)
-
-check-mingw:
-	@which $(CC_WIN) > /dev/null 2>&1 || \
-	  (echo "✗ $(CC_WIN) not found. Install with: brew install mingw-w64" && exit 1)
-
-## Install fyne v2 CLI tool
-fyne-setup:
-	go install fyne.io/tools/cmd/fyne@latest
+## Build and launch the app (macOS)
+run: build
+	open $(BUILD)/img-settings.app
 
 clean:
-	rm -rf $(DIST)
-	rm -f gui/*.syso
-
-## Quick dev build for the current platform only
-dev: dist-dir
-	@echo "→ Dev build (native)…"
-	CGO_ENABLED=1 go build -o $(DIST)img-settings-gui-dev $(GUI_PKG)
-	@echo "✓ $(DIST)img-settings-gui-dev"
+	rm -rf $(BUILD) dist

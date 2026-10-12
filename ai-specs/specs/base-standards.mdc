@@ -7,7 +7,7 @@ alwaysApply: true
 
 - **Small tasks, one at a time**: Always work in baby steps, one at a time. Never go forward more than one step.
 - **Test-Driven Development**: Start with failing tests for any new functionality (TDD), according to the task details.
-- **Type Safety**: All code must be fully typed. Use Go's static type system; avoid `interface{}` unless strictly necessary.
+- **Type Safety**: Use C++'s static types and Qt's typed APIs; avoid `QVariant` and untyped `var` in QML unless strictly necessary.
 - **Clear Naming**: Use clear, descriptive names for all variables, functions, and types.
 - **Incremental Changes**: Prefer incremental, focused changes over large, complex modifications.
 - **Question Assumptions**: Always question assumptions and inferences before acting.
@@ -27,5 +27,5 @@ alwaysApply: true
 
 For detailed standards and guidelines specific to different areas of the project, refer to:
 
-- [Go Standards](./go-standards.mdc) — Go code style, package layout, error handling, testing, and CI/CD practices
+- [Qt Standards](./qt-standards.mdc) — C++/QML code style, project layout, error handling, testing, and CI/CD practices
 - [Development Guide](./development_guide.md) — Environment setup, build commands, test commands, and release workflow
