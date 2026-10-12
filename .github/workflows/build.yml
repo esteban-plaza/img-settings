@@ -30,9 +30,17 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # aqtinstall (used by install-qt-action) does not support the runner's
+      # default Python yet.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
+          aqtversion: "==3.3.*"
+          setup-python: false
           version: ${{ env.QT_VERSION }}
           host: mac
           target: desktop
@@ -113,9 +121,17 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # aqtinstall (used by install-qt-action) does not support the runner's
+      # default Python yet.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
+          aqtversion: "==3.3.*"
+          setup-python: false
           version: ${{ env.QT_VERSION }}
           host: windows
           target: desktop
