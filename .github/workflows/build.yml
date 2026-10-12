@@ -68,7 +68,7 @@ jobs:
         run: |
           VCPKG_INSTALLED="$VCPKG_ROOT/installed/$TRIPLET"
           PKG_CONFIG_PATH="$VCPKG_INSTALLED/lib/pkgconfig" \
-          cmake -S qt -B build \
+          cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_OSX_ARCHITECTURES=arm64 \
             -DAPP_VERSION=${{ inputs.version }} \
@@ -78,10 +78,13 @@ jobs:
       - name: Build
         run: cmake --build build --parallel
 
+      - name: Unit tests
+        run: ctest --test-dir build --output-on-failure
+
       - name: Bundle Qt into the app
         run: |
           APP=build/img-settings.app
-          macdeployqt "$APP" -qmldir=qt/qml -always-overwrite
+          macdeployqt "$APP" -qmldir=qml -always-overwrite
           # The app has no database access; these plugins reference missing libs.
           rm -rf "$APP/Contents/PlugIns/sqldrivers"
           # Qt ships universal binaries; keep only the Apple Silicon slice.
@@ -94,8 +97,9 @@ jobs:
           codesign --force --deep --sign - "$APP"
           otool -L "$APP/Contents/MacOS/img-settings"
 
+      # Unset the Qt paths set by install-qt-action so only the bundled Qt is used.
       - name: Smoke test
-        run: build/img-settings.app/Contents/MacOS/img-settings --smoke-test
+        run: env -u QT_PLUGIN_PATH -u QML2_IMPORT_PATH build/img-settings.app/Contents/MacOS/img-settings --smoke-test
 
       - name: Package .dmg
         run: |
@@ -164,7 +168,7 @@ jobs:
         run: |
           $installed = "$env:VCPKG_ROOT\installed\$env:TRIPLET"
           $env:PKG_CONFIG_PATH = "$installed\lib\pkgconfig"
-          cmake -S qt -B build -A x64 `
+          cmake -S . -B build -A x64 `
             -DAPP_VERSION=${{ inputs.version }} `
             -DPKG_CONFIG_EXECUTABLE="$installed\tools\pkgconf\pkgconf.exe" `
             -DREQUIRE_JXL=ON -DJXL_STATIC=ON
@@ -173,12 +177,15 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel
 
+      - name: Unit tests
+        run: ctest --test-dir build -C Release --output-on-failure
+
       - name: Bundle Qt and the MSVC runtime
         run: |
           $out = "dist\img-settings"
           New-Item -ItemType Directory -Force $out | Out-Null
           Copy-Item build\Release\img-settings.exe $out
-          windeployqt --release --qmldir qt/qml --no-translations --no-system-d3d-compiler --no-opengl-sw "$out\img-settings.exe"
+          windeployqt --release --qmldir qml --no-translations --no-system-d3d-compiler --no-opengl-sw "$out\img-settings.exe"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
           # The Windows 11 style is picked at runtime (QQuickStyle), so the QML
@@ -198,6 +205,8 @@ jobs:
 
       - name: Smoke test
         run: |
+          # Only the bundled Qt may be used: drop the paths set by install-qt-action.
+          Remove-Item Env:QT_PLUGIN_PATH, Env:QML2_IMPORT_PATH -ErrorAction SilentlyContinue
           $env:QT_FORCE_STDERR_LOGGING = "1"
           $p = Start-Process dist\img-settings\img-settings.exe -ArgumentList "--smoke-test" `
             -PassThru -RedirectStandardError smoke.log

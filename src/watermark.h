@@ -18,6 +18,9 @@ QStringList supportedFormats();
 bool isSupported(const QString &path);
 QString outputPath(const QString &inputPath, const QString &outDir);
 
+// Expands files and folders into the supported photos to process, naturally sorted.
+QStringList collectFiles(const QStringList &paths, bool recurse, const QString &outDir);
+
 QImage decodeImage(const QString &path, const QByteArray &data, QString *error);
 QImage applyOrientation(const QImage &image, int orientation);
 QImage resizeForWhatsApp(const QImage &image);

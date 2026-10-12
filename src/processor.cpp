@@ -2,55 +2,12 @@
 
 #include "watermark.h"
 
-#include <QCollator>
 #include <QDesktopServices>
 #include <QDir>
-#include <QDirIterator>
 #include <QFileInfo>
 #include <QProcess>
-#include <QSet>
-
-#include <algorithm>
 
 using namespace Qt::StringLiterals;
-
-namespace {
-
-// Dropped folders are scanned for supported photos; subfolders only when recurse is on.
-// Files already inside the output folder are skipped so re-runs don't watermark twice.
-QStringList collectFiles(const QStringList &paths, bool recurse, const QString &outDir)
-{
-    const QString outPrefix = QDir::cleanPath(outDir) + u'/';
-    QStringList files;
-    QSet<QString> seen;
-    auto add = [&](const QString &file) {
-        const QString clean = QDir::cleanPath(file);
-        if (Watermark::isSupported(clean) && !clean.startsWith(outPrefix) && !seen.contains(clean)) {
-            seen.insert(clean);
-            files.append(clean);
-        }
-    };
-
-    for (const QString &path : paths) {
-        const QFileInfo info(path);
-        if (info.isDir()) {
-            QDirIterator it(path, QDir::Files | QDir::NoDotAndDotDot,
-                            recurse ? QDirIterator::Subdirectories : QDirIterator::NoIteratorFlags);
-            while (it.hasNext())
-                add(it.next());
-        } else if (info.isFile()) {
-            add(path);
-        }
-    }
-
-    QCollator collator;
-    collator.setNumericMode(true);
-    collator.setCaseSensitivity(Qt::CaseInsensitive);
-    std::sort(files.begin(), files.end(), collator);
-    return files;
-}
-
-} // namespace
 
 Processor::Processor(QObject *parent)
     : QObject(parent)
@@ -86,7 +43,7 @@ int Processor::process(const QList<QUrl> &urls, bool recurse, double opacity, co
     }
     outDir = QDir::cleanPath(outDir);
 
-    const QStringList files = collectFiles(paths, recurse, outDir);
+    const QStringList files = Watermark::collectFiles(paths, recurse, outDir);
     if (files.isEmpty())
         return 0;
 

@@ -5,7 +5,9 @@
 #endif
 
 #include <QBuffer>
+#include <QCollator>
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
 #include <QFont>
@@ -14,9 +16,12 @@
 #include <QImageWriter>
 #include <QPainter>
 #include <QPainterPath>
+#include <QSet>
 #include <QProcess>
 #include <QStandardPaths>
 #include <QtMath>
+
+#include <algorithm>
 
 using namespace Qt::StringLiterals;
 
@@ -213,6 +218,40 @@ bool isSupported(const QString &path)
 QString outputPath(const QString &inputPath, const QString &outDir)
 {
     return QDir(outDir).filePath(QFileInfo(inputPath).completeBaseName() + u".jpg");
+}
+
+// Dropped folders are scanned for supported photos; subfolders only when recurse is on.
+// Files already inside the output folder are skipped so re-runs don't watermark twice.
+QStringList collectFiles(const QStringList &paths, bool recurse, const QString &outDir)
+{
+    const QString outPrefix = QDir::cleanPath(outDir) + u'/';
+    QStringList files;
+    QSet<QString> seen;
+    auto add = [&](const QString &file) {
+        const QString clean = QDir::cleanPath(file);
+        if (isSupported(clean) && !clean.startsWith(outPrefix) && !seen.contains(clean)) {
+            seen.insert(clean);
+            files.append(clean);
+        }
+    };
+
+    for (const QString &path : paths) {
+        const QFileInfo info(path);
+        if (info.isDir()) {
+            QDirIterator it(path, QDir::Files | QDir::NoDotAndDotDot,
+                            recurse ? QDirIterator::Subdirectories : QDirIterator::NoIteratorFlags);
+            while (it.hasNext())
+                add(it.next());
+        } else if (info.isFile()) {
+            add(path);
+        }
+    }
+
+    QCollator collator;
+    collator.setNumericMode(true);
+    collator.setCaseSensitivity(Qt::CaseInsensitive);
+    std::sort(files.begin(), files.end(), collator);
+    return files;
 }
 
 QImage decodeImage(const QString &path, const QByteArray &data, QString *error)

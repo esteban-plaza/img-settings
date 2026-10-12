@@ -4,7 +4,6 @@
       "Bash(gh run:*)",
       "Bash(git add:*)",
       "Bash(gh release:*)",
-      "Bash(grep -E '\\\\.\\(go|toml\\)$')",
       "WebFetch(domain:github.com)",
       "WebSearch",
       "WebFetch(domain:medium.com)",
