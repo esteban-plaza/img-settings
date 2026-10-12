@@ -78,8 +78,18 @@ if(JXL_FOUND)
     if(JXL_STATIC)
         # Static libjxl (the release builds use vcpkg): link its private deps too.
         target_include_directories(ImgSettings PRIVATE ${JXL_STATIC_INCLUDE_DIRS})
-        target_link_directories(ImgSettings PRIVATE ${JXL_STATIC_LIBRARY_DIRS})
-        target_link_libraries(ImgSettings PRIVATE ${JXL_STATIC_LIBRARIES})
+        # Resolve each library to a file: on MSVC libjxl.pc names "jxl-static"
+        # while the installed library is jxl.lib.
+        foreach(lib IN LISTS JXL_STATIC_LIBRARIES)
+            string(REGEX REPLACE "-static$" "" plain "${lib}")
+            find_library(JXL_DEP_${lib} NAMES ${lib} ${plain}
+                         HINTS ${JXL_STATIC_LIBRARY_DIRS} NO_DEFAULT_PATH)
+            if(JXL_DEP_${lib})
+                target_link_libraries(ImgSettings PRIVATE ${JXL_DEP_${lib}})
+            elseif(NOT MSVC)
+                target_link_libraries(ImgSettings PRIVATE ${lib}) # system libs (c++, m)
+            endif()
+        endforeach()
         target_compile_definitions(ImgSettings PRIVATE JXL_STATIC_DEFINE JXL_CMS_STATIC_DEFINE)
     else()
         target_link_libraries(ImgSettings PRIVATE PkgConfig::JXL)
