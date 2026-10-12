@@ -29,6 +29,7 @@ See @ai-specs/.agents/go-developer.md for the Go developer agent role and workfl
 ## Project Quick Reference
 
 ```
+qt/     # Qt6/QML desktop app (C++ engine) — the released app
 lib/    # Core logic (EXIF, decode, resize, watermark) — CGO=0 safe, pure Go
 gui/    # Fyne v2 GUI — CGO required
 cli/    # CLI — CGO=0 single static binary

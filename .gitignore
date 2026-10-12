@@ -40,3 +40,6 @@ dist/
 
 # Generated sample photos for documentation (run scripts/gen-docs.sh to regenerate)
 docs/examples/
+
+# Qt build output
+qt/build/
