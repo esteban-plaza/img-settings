@@ -18,18 +18,13 @@ Executes the implementation plan referenced by the given file, following each st
 2. **Execute steps in order** — never skip or reorder steps.
 3. **TDD discipline**:
    - Write the test first.
-   - Run `go test ./...` — confirm it fails.
+   - Run `make test` — confirm it fails.
    - Implement the minimum code to make it pass.
-   - Run `go test ./...` — confirm it passes.
+   - Run `make test` — confirm it passes.
 4. **After each step**:
-   - Run `go vet ./...` — must be clean.
+   - The build must have no new compiler or QML warnings.
    - Commit with a Conventional Commits message referencing the ticket.
-5. **Verify coverage** after all steps:
-   ```bash
-   go test ./lib/ -coverprofile=coverage.out
-   go tool cover -func=coverage.out
-   ```
-   Coverage for `lib/` must be ≥ 80%.
+5. **Check the UI** if the plan touches `qml/`: launch the app on macOS and with `IMG_SETTINGS_STYLE=windows`.
 6. **Update documentation** if the plan requires it:
    - `docs/USER_GUIDE.md`
    - `docs/USER_GUIDE.es.md`

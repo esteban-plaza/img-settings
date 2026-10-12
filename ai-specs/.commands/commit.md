@@ -22,7 +22,7 @@ Creates a well-formed git commit for the current staged changes, following the C
    - `test` — adding or fixing tests
    - `perf` — performance improvement
 3. Determine the scope (the affected package or area):
-   - `lib`, `gui`, `cli`, `ci`, `deps`, `docs`, `build`
+   - `engine`, `ui`, `mac`, `windows`, `ci`, `deps`, `docs`, `build`
 4. Write a subject line: imperative mood, max 72 characters, no period.
 5. If the change is substantial, add a body explaining **why** (not what).
 6. If it introduces a breaking change, add `BREAKING CHANGE: <description>` in the footer.
@@ -35,9 +35,9 @@ Creates a well-formed git commit for the current staged changes, following the C
 ## Examples
 
 ```
-feat(cli): add --quality flag for JPEG output quality
-fix(lib): correct EXIF orientation handling for tag value 8
-chore(ci): cache Go modules between CI runs
-test(lib): add table-driven tests for OutputPath
+feat(engine): read EXIF from HEIC files
+fix(engine): correct EXIF orientation handling for tag value 8
+chore(ci): cache the vcpkg build between CI runs
+test(engine): add data-driven tests for outputPath
 docs: update USER_GUIDE with ARW troubleshooting steps
 ```

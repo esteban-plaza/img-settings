@@ -8,19 +8,18 @@
 
 1. [What is img-settings?](#1-what-is-img-settings)
 2. [Installation](#2-installation)
-3. [Using the app (GUI)](#3-using-the-app-gui)
-4. [Using the command line (CLI)](#4-using-the-command-line-cli)
-5. [Understanding the watermark](#5-understanding-the-watermark)
-6. [Working with Sony RAW files (ARW)](#6-working-with-sony-raw-files-arw)
-7. [Troubleshooting](#7-troubleshooting)
+3. [Using the app](#3-using-the-app)
+4. [Understanding the watermark](#4-understanding-the-watermark)
+5. [Supported formats](#5-supported-formats)
+6. [Troubleshooting](#6-troubleshooting)
 
 ---
 
 ## 1. What is img-settings?
 
-img-settings is a small tool that takes your photos and adds a subtle watermark showing the camera settings used to take the shot — aperture, shutter speed, ISO, focal length, and camera model. The result is exported as a JPG file optimised for WhatsApp HD sharing (max 2560 px on the longest side, quality 92).
+img-settings is a small app that takes your photos and adds a subtle watermark showing the camera settings used to take the shot — aperture, shutter speed, ISO, focal length, and camera model. The result is exported as a JPG file optimised for WhatsApp HD sharing (max 2560 px on the longest side, quality 92).
 
-It works with JPG, PNG, and Sony ARW (RAW) files.
+It works with JPG, PNG, JPEG XL and Sony ARW (RAW) files, on macOS and Windows.
 
 ---
 
@@ -32,148 +31,102 @@ Go to the [Releases page](https://github.com/esteban-plaza/img-settings/releases
 
 | System | File to download |
 |---|---|
-| Mac with Apple Silicon (M1/M2/M3/M4) | `img-settings-darwin-arm64` |
-| Mac with Intel processor | `img-settings-darwin-amd64` |
-| Windows | `img-settings-windows-amd64.exe` |
+| Mac with Apple Silicon (M1 or newer), macOS 13 Ventura or later | `img-settings-macos-arm64.dmg` |
+| Windows 10 or 11, 64-bit | `img-settings-windows-x64.zip` |
 
-Not sure which Mac you have? Click the  menu → **About This Mac**. If it says "Apple M..." you have Apple Silicon. If it says "Intel" you have an Intel Mac.
+Not sure which Mac you have? Click the  menu → **About This Mac**. If it says "Apple M…" you have Apple Silicon. Macs with Intel processors are not supported.
 
-### First launch on macOS
+### macOS
+
+1. Open `img-settings-macos-arm64.dmg`
+2. Drag **img-settings** onto the **Applications** folder
 
 macOS will block the app the first time because it was downloaded from the internet and is not signed with an Apple developer certificate. To allow it:
 
-**Option A — Terminal (quickest):**
-```bash
-xattr -d com.apple.quarantine ~/Downloads/img-settings-darwin-arm64
-chmod +x ~/Downloads/img-settings-darwin-arm64
-```
-
-Then double-click the file to open it.
-
-**Option B — System Settings:**
-1. Try to open the app — macOS will block it and show an alert
+**Option A — System Settings:**
+1. Open img-settings — macOS blocks it and shows an alert
 2. Open **System Settings → Privacy & Security**
 3. Scroll down to the security section and click **Open Anyway**
 
+**Option B — Terminal:**
+```bash
+xattr -d com.apple.quarantine /Applications/img-settings.app
+```
+
 ### Windows
 
-Double-click `img-settings-windows-amd64.exe`. If Windows Defender SmartScreen shows a warning, click **More info → Run anyway**.
+1. Right-click `img-settings-windows-x64.zip` → **Extract All…**
+2. Open the extracted `img-settings` folder and double-click `img-settings.exe`
+
+Keep `img-settings.exe` inside its folder — it needs the files next to it. If Windows Defender SmartScreen shows a warning, click **More info → Run anyway**.
 
 ---
 
-## 3. Using the app (GUI)
+## 3. Using the app
 
-### Drop your photos
+The app looks native on each platform: Apple's Liquid Glass style on macOS and the Windows 11 style on Windows. Both work the same way.
 
-![Drop zone — ready to receive photos](assets/screenshot-dropzone.png)
+### Add your photos
 
-When you open the app you will see a large drop zone in the centre of the window. You can:
+![Drop zone on macOS](assets/screenshot-macos-dropzone.png)
 
-- **Drag and drop** one or more photos directly onto the window
+![Drop zone on Windows](assets/screenshot-windows-dropzone.png)
+
+You can:
+
+- **Drag and drop** one or more photos onto the window
 - **Drag and drop a folder** to process all photos inside it
-- **Click the drop zone** to open a folder browser
+- **Click the drop zone** (macOS) or **Choose folder…** (Windows) to pick a folder
+- Click **Choose Photos…** to pick individual photos
+- Press **⌘O** (macOS) or **Ctrl+O** (Windows) to open the folder picker
 
-The app will start processing immediately after you drop the files.
+The badges under the drop zone (macOS) or the text below it (Windows) list the formats this version supports. Processing starts immediately.
 
-### Settings toolbar
+### Settings
 
-At the bottom of the window there is a toolbar with three options:
+The settings bar is at the bottom of the window.
 
 #### Subfolders
-When you drop a folder, this option controls whether the app also looks inside subfolders.
+When you add a folder, this option controls whether the app also looks inside its subfolders.
 
-- **Off (default):** only processes photos directly inside the dropped folder
-- **On:** recursively finds all photos in every subfolder
+- **Off (default):** only photos directly inside the folder
+- **On:** every photo in every subfolder
 
 #### Opacity
-Controls how visible the watermark is, from 0% (invisible) to 100% (fully opaque). The default is **82%**, which gives a clean look without being too intrusive.
+How visible the watermark background is, from 0% to 100%. The default is **82%**, which gives a clean look without being too intrusive.
 
-Move the slider left to make the watermark more transparent, or right to make it more prominent.
+#### Output (macOS) / Save to (Windows)
+The folder where the processed photos are saved.
 
-#### Output folder
-The folder where the processed photos will be saved.
+- **Default — "Auto (./out)":** an `out/` folder is created next to your photos (inside the folder you added, or next to the first photo)
+- **Custom:** click the button to choose a different folder
+- **Back to automatic:** click the **×** next to the folder (macOS) or **Reset** (Windows)
 
-- **Default:** an `out/` folder is created automatically inside the folder you dropped
-- **Custom:** click the folder icon to choose a different destination
-- **Reset:** click the × button to go back to the automatic default
-
-> The original photos are never modified. img-settings always writes to the output folder.
+> The original photos are never modified. Photos that are already inside the output folder are skipped, so running the app twice on the same folder does not stamp them twice.
 
 ### Progress and results
 
-![Processing in progress](assets/screenshot-processing.png)
+![Processing on macOS](assets/screenshot-macos-processing.png)
 
-Once processing starts, the drop zone is replaced by a progress bar and a list of files being processed. Each file shows:
+While working, the window shows a progress bar and a grid with a preview of each finished photo and its size. Several photos are processed in parallel. Click **Stop** (or press **Esc**) to cancel the remaining photos.
 
-- ✓ and the file size when it finishes successfully
-- ✗ and an error message if something went wrong
+If a photo cannot be processed, its tile shows an error badge — hover over it to read the reason.
 
-![Done — all files processed](assets/screenshot-done.png)
+![Done on macOS](assets/screenshot-macos-done.png)
 
-When all files are done, two buttons appear:
+![Done on Windows](assets/screenshot-windows-done.png)
 
-- **Reveal in Finder / Open in Explorer** — opens the output folder so you can see your photos
-- **Process more** — goes back to the drop zone to process another batch
+When everything is done:
 
----
-
-## 4. Using the command line (CLI)
-
-The CLI version is for users who prefer the terminal or want to automate batch processing.
-
-### Basic usage
-
-```bash
-# Process all photos in a folder
-img-settings-cli-macos /path/to/photos/
-
-# Process a single file
-img-settings-cli-macos photo.jpg
-
-# Process multiple folders at once
-img-settings-cli-macos ~/Desktop/session1/ ~/Desktop/session2/
-```
-
-### Options
-
-| Option | Default | Description |
-|---|---|---|
-| `-out <folder>` | `out/` | Where to save the processed photos |
-| `-opacity <0.0–1.0>` | `0.82` | Watermark opacity (0 = invisible, 1 = fully opaque) |
-
-### Examples
-
-```bash
-# Save to a specific folder
-img-settings-cli-macos -out ~/Desktop/watermarked/ ~/Photos/session/
-
-# More transparent watermark
-img-settings-cli-macos -opacity 0.5 photo.jpg
-
-# Combine options
-img-settings-cli-macos -out ~/Desktop/out -opacity 0.9 ~/Photos/
-```
-
-### Output
-
-The CLI prints a line for each file as it finishes:
-
-```
-processing 12 file(s) → out/  [8 workers]
-
-  DSC00123.ARW                              OK  (2.1 MB)
-  DSC00124.ARW                              OK  (1.9 MB)
-  DSC00125.jpg                              OK  (0.8 MB)
-  ...
-
-done: 12 ok, 0 failed
-```
+- **Reveal in Finder / Open in File Explorer** — opens the output folder
+- **Process More** — goes back to the start to process another batch
+- Click a preview to open that photo
 
 ---
 
-## 5. Understanding the watermark
+## 4. Understanding the watermark
 
-The watermark is a dark pill-shaped label placed at the **bottom centre** of the image. It shows the following information when available in the photo's EXIF data:
+The watermark is a dark pill-shaped label placed at the **bottom centre** of the image. It shows the following information when it is available in the photo's EXIF data:
 
 | Icon | Field | Example |
 |---|---|---|
@@ -183,23 +136,34 @@ The watermark is a dark pill-shaped label placed at the **bottom centre** of the
 | Chip | ISO | ISO 400 |
 | Lens circles | Focal length | 85mm |
 
-**Fields with no data are simply omitted.** If a photo has no EXIF data at all (for example, a screenshot), the photo is exported as-is without any watermark.
+**Fields with no data are simply omitted.** If a photo has no EXIF data at all (for example, a screenshot), the photo is exported without a watermark.
 
-The watermark size adapts automatically to the image — it scales with the image height and shrinks the font if needed to fit all values within the image width.
+The watermark size adapts to the image: it scales with the image height and shrinks the text if needed so everything fits within the image width.
+
+Photos are rotated according to their EXIF orientation, so portrait shots come out upright.
 
 ---
 
-## 6. Working with Sony RAW files (ARW)
+## 5. Supported formats
 
-img-settings supports Sony ARW files. It tries three methods in order:
+| Format | Notes |
+|---|---|
+| JPG / JPEG | |
+| PNG | EXIF is read from the `eXIf` chunk when present |
+| JPEG XL (`.jxl`) | EXIF is read even when compressed; wide-gamut and HDR images are converted to sRGB |
+| ARW (Sony RAW) | See below |
 
-1. **Embedded JPEG preview** — most Sony cameras embed a full-resolution JPEG inside the ARW file. img-settings extracts this directly, which is fast and requires no extra tools.
+Output is always JPG.
 
-2. **dcraw** — if no usable preview is found, img-settings tries to use dcraw to decode the RAW data.
+### Sony RAW files (ARW)
 
+img-settings tries three methods in order:
+
+1. **Embedded JPEG preview** — most Sony cameras embed a full-resolution JPEG inside the ARW file. img-settings extracts it directly; this is fast and needs no extra tools.
+2. **dcraw** — if no usable preview is found, img-settings uses dcraw to decode the RAW data.
 3. **ImageMagick** — if dcraw is not installed, it falls back to ImageMagick.
 
-If none of these work, the file will be skipped with an error message. To install the fallback tools on macOS:
+To install the fallback tools on macOS:
 
 ```bash
 brew install dcraw
@@ -209,19 +173,22 @@ brew install imagemagick
 
 ---
 
-## 7. Troubleshooting
+## 6. Troubleshooting
 
 **The app does not open on macOS**
-Follow the steps in [First launch on macOS](#first-launch-on-macos). macOS blocks apps that are not signed with an Apple developer certificate.
+Follow the steps in [macOS](#macos). macOS blocks apps that are not signed with an Apple developer certificate.
+
+**The app does not start on Windows**
+Make sure you extracted the whole `.zip` and run `img-settings.exe` from inside the extracted folder — running it from inside the zip or moving the `.exe` alone does not work.
 
 **The watermark is not showing**
 The photo likely has no EXIF data. This can happen with screenshots, photos exported from some apps, or images that had their metadata stripped. Try a photo taken directly with a camera or phone.
 
-**ARW files are skipped with an error**
-Install dcraw or ImageMagick (see [Working with Sony RAW files](#6-working-with-sony-raw-files-arw)).
+**"No supported photos found"**
+The files or folder you added contain no supported photos. If the photos are in subfolders, turn on **Subfolders**.
 
-**The output photo looks the same size as the original**
-If your photo is already 2560 px or smaller on its longest side, img-settings does not resize it. The resize only kicks in for larger images.
+**ARW files show an error**
+Install dcraw or ImageMagick (see [Sony RAW files](#sony-raw-files-arw)).
 
-**I dropped a folder but some photos were not processed**
-Check that the photos are in a supported format (JPG, PNG, ARW). If they are in subfolders, make sure the **Subfolders** toggle is turned on.
+**The output photo is the same size as the original**
+If your photo is already 2560 px or smaller on its longest side, img-settings does not resize it.

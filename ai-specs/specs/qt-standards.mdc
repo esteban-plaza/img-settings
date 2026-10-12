@@ -1,0 +1,269 @@
+---
+description: C++/Qt development standards for img-settings — project layout, coding conventions, testing, build, CI/CD and release practices.
+globs: ["src/**", "qml/**", "shaders/**", "tests/**", "CMakeLists.txt", "Makefile", ".github/workflows/*.yml"]
+alwaysApply: true
+---
+
+# C++ / Qt Project Standards and Best Practices
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Technology Stack](#technology-stack)
+- [Architecture Overview](#architecture-overview)
+  - [Project Layout](#project-layout)
+  - [Dependency Flow](#dependency-flow)
+- [Coding Standards](#coding-standards)
+  - [C++](#c)
+  - [QML](#qml)
+  - [Error Handling](#error-handling)
+  - [Concurrency](#concurrency)
+  - [Comments and Documentation](#comments-and-documentation)
+- [Testing Standards](#testing-standards)
+- [Build System](#build-system)
+- [Development Workflow](#development-workflow)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Performance Best Practices](#performance-best-practices)
+- [Security Best Practices](#security-best-practices)
+
+---
+
+## Overview
+
+img-settings is a desktop app for macOS and Windows that reads EXIF metadata from photos and stamps a watermark with the camera settings. Output is always JPEG for WhatsApp HD (max 2560 px, quality 92). The app is written in C++17 with Qt 6 and a QML user interface: a "Liquid Glass" look on macOS and the Windows 11 (WinUI 3 / Fluent) look on Windows.
+
+These standards apply to every contributor, human or AI.
+
+---
+
+## Technology Stack
+
+| Component | Technology | Notes |
+|-----------|-----------|-------|
+| Language | C++17 | `CMAKE_CXX_STANDARD 17` |
+| UI | Qt Quick / QML, Qt Quick Controls | `Basic` style customised on macOS, `FluentWinUI3` on Windows |
+| Effects | Qt Quick Effects (`MultiEffect`, `RectangularShadow`), Qt Shader Tools | Glass shader in `shaders/glass.frag` |
+| Image I/O & drawing | `QImage`, `QImageReader/Writer`, `QPainter` | Watermark is drawn with the embedded Go Regular font |
+| EXIF | In-house TIFF/EXIF reader (`src/exif.cpp`) | JPEG APP1, PNG `eXIf`, TIFF-based raw (ARW), JXL `Exif` box |
+| JPEG XL | libjxl 0.12 (optional) | Enabled when found via pkg-config (`HAVE_JXL`) |
+| Sony RAW | Embedded JPEG preview → `dcraw` → ImageMagick | External tools are optional fallbacks |
+| Build | CMake 3.21+, Qt 6.9+ (CI uses 6.11.2) | `qt_add_qml_module`, `qt_add_shaders` |
+| Tests | Qt Test + CTest | `tests/tst_engine.cpp` |
+
+### CI/CD
+
+- **GitHub Actions** — `build.yml` (reusable build), `ci.yml` (PRs), `release.yml` (releases)
+- **Dependabot** — monthly GitHub Actions updates
+- **Semantic Release** — commit-message–driven versioning on `main`
+
+---
+
+## Architecture Overview
+
+### Project Layout
+
+```
+img-settings/
+├── CMakeLists.txt        # App, ImgEngine library, optional libjxl, tests
+├── src/
+│   ├── exif.h/.cpp       # PhotoSettings + readExif (pure, no I/O)
+│   ├── jxl.h/.cpp        # JPEG XL decoding via libjxl (HAVE_JXL only)
+│   ├── watermark.h/.cpp  # Engine: collect, decode, orient, resize, watermark, processFile
+│   ├── processor.h/.cpp  # QML-facing Processor: thread pool, progress, cancel
+│   └── main.cpp          # App entry: fonts, style selection, QML engine
+├── qml/                  # UI — Main.qml (shared logic) + MacShell / WindowsShell
+├── shaders/glass.frag    # Liquid Glass refraction shader
+├── assets/               # App icons, Go Regular font (+ license)
+├── tests/                # Qt Test unit tests + fixtures (tests/data)
+├── docs/                 # User guides (EN + ES) and screenshots
+├── .github/workflows/    # build.yml, ci.yml, release.yml
+├── Makefile              # Developer shortcuts around CMake
+└── .releaserc.json       # Semantic-release configuration
+```
+
+### Dependency Flow
+
+```
+qml/*.qml ──► Processor (src/processor.*) ──► ImgEngine (exif, watermark, jxl)
+                                                   │
+tests/tst_engine.cpp ──────────────────────────────┘
+```
+
+**Rule**: `ImgEngine` (`exif`, `watermark`, `jxl`) depends only on Qt GUI and libjxl. It must never include QML, Qt Quick or `processor.h`, so it stays testable without a UI. The UI talks to the engine only through `Processor`.
+
+---
+
+## Coding Standards
+
+### C++
+
+| Entity | Convention | Example |
+|--------|-----------|---------|
+| Types | PascalCase | `PhotoSettings`, `Processor` |
+| Functions, variables | camelCase | `processFile`, `outDir` |
+| Members | `m_` prefix | `m_pool`, `m_generation` |
+| Constants | PascalCase | `MaxWhatsAppDim`, `JpegQuality` |
+| Engine API | free functions in `namespace Watermark` | `Watermark::addWatermark` |
+
+- Use Qt types at API boundaries (`QString`, `QByteArray`, `QImage`) and `using namespace Qt::StringLiterals` (`u"..."_s`) for string literals.
+- Keep helpers that are not part of the API in an anonymous namespace inside the `.cpp`.
+- No raw `new`/`delete` for ownership; use parent ownership for `QObject`s and value types or smart pointers elsewhere.
+- Platform differences go behind `Q_OS_MACOS` / `Q_OS_WIN` in C++ or the `fluent` flag in QML, never in the engine.
+
+### QML
+
+- `Main.qml` holds state and logic shared by both platforms; `MacShell.qml` and `WindowsShell.qml` only lay out the platform-specific UI.
+- Design tokens live in the singletons `Theme.qml` (macOS) and `Fluent.qml` (Windows); do not hard-code colours or sizes in components.
+- Use `required property` for delegate data and avoid binding loops (check the console when running).
+- Glass panels must be siblings of the `Backdrop` item, because they sample the backdrop in its coordinate system.
+
+### Error Handling
+
+- The engine never throws. `processFile` returns an empty `QString` on success or a short, user-readable error (`"open: …"`, `"decode: …"`, `"JPEG XL: …"`).
+- `readExif` never fails: missing data gives empty fields and orientation 1.
+- UI errors are shown inline in the result tile or via the toast / InfoBar (`problem` signal), never by quitting.
+
+### Concurrency
+
+- `Processor` runs one `processFile` call per photo on a `QThreadPool` sized to `QThread::idealThreadCount()`.
+- Engine functions must stay thread-safe: no shared mutable state except the font family set once at startup.
+- Results return to the UI thread through queued signals. A generation counter discards results from cancelled batches.
+
+### Comments and Documentation
+
+- Every public function in an engine header has a one-line comment describing its contract.
+- Comments explain **why**, not **what**.
+
+---
+
+## Testing Standards
+
+- Engine behaviour is covered by Qt Test in `tests/tst_engine.cpp` and run with CTest (`make test`).
+- Prefer data-driven tests (`<test>_data()` + `QFETCH`), the Qt equivalent of table-driven tests.
+- Build test inputs in code (`solidImage`, `encodeJpeg`, `withExif`) and use `QTemporaryDir` for anything that touches the filesystem. Binary fixtures go in `tests/data/` only when they cannot be generated (e.g. the JPEG XL sample) and must stay small.
+- JPEG XL tests are compiled only with `HAVE_JXL`.
+- Every bug fix in the engine comes with a test that fails without the fix (TDD).
+- The UI is checked by the CI launch smoke test (`img-settings --smoke-test`) and by manual review of both styles. Use `IMG_SETTINGS_STYLE=windows` to preview the Windows style on macOS.
+
+---
+
+## Build System
+
+| Command | Description |
+|---------|-------------|
+| `make` / `make build` | Configure (Release) and build the app and the tests into `build/` |
+| `make test` | Build and run the unit tests |
+| `make run` | Build and open the app (macOS) |
+| `make clean` | Remove `build/` and `dist/` |
+
+CMake options:
+
+| Option | Default | Purpose |
+|--------|---------|---------|
+| `APP_VERSION` | `0.0.0` | Version for the bundle / executable (set by the release pipeline) |
+| `IMG_SETTINGS_TESTS` | `ON` | Build `tests/` |
+| `REQUIRE_JXL` | `OFF` | Fail if libjxl is missing (CI sets it) |
+| `JXL_STATIC` | `OFF` | Link libjxl and its dependencies statically (CI, via vcpkg) |
+
+---
+
+## Development Workflow
+
+### Git Workflow
+
+1. `main` is the single long-lived branch. All releases are cut from `main`.
+2. Work happens on short-lived branches merged through pull requests.
+3. Every PR must pass CI (macOS + Windows build, unit tests and smoke test) before merge.
+
+### Branch Naming
+
+| Type | Pattern | Example |
+|------|---------|---------|
+| Feature | `feature/<short-description>` | `feature/heic-input` |
+| Bug fix | `fix/<short-description>` | `fix/arw-orientation` |
+| Chore / docs | `chore/<short-description>` | `chore/update-qt` |
+
+### Commit Messages
+
+Follow **Conventional Commits** (required by semantic-release):
+
+```
+<type>(<scope>): <subject>
+```
+
+| Type | When to use |
+|------|------------|
+| `feat` | New user-visible feature |
+| `fix` | Bug fix |
+| `docs` | Documentation only |
+| `chore` | Build, CI, or tooling change |
+| `refactor` | Code restructure with no behaviour change |
+| `test` | Adding or fixing tests |
+| `perf` | Performance improvement |
+
+Scopes: `engine`, `ui`, `mac`, `windows`, `ci`, `build`, `deps`, `docs`.
+
+Examples:
+```
+feat(engine): read EXIF from HEIC files
+fix(ui): keep the window draggable from the title bar area
+chore(ci): bump Qt to 6.11.3
+test(engine): cover orientation values 5 and 7
+```
+
+**Breaking changes** must include `BREAKING CHANGE:` in the footer (major version bump).
+
+### Pull Requests
+
+- Keep PRs small and focused, describing **what** changed and **why**.
+- Run `make test` locally before pushing.
+- Include screenshots for UI changes (macOS and the Windows style).
+
+---
+
+## CI/CD Pipeline
+
+### Build (`.github/workflows/build.yml`)
+
+Reusable workflow with two parallel jobs:
+
+| Job | Runner | Output |
+|-----|--------|--------|
+| macOS (Apple Silicon) | `macos-15` | `img-settings-macos-arm64.dmg` (macOS 13+) |
+| Windows (x64) | `windows-2025` | `img-settings-windows-x64.zip` |
+
+Each job:
+1. Installs Qt 6.11.2 (+ Qt Shader Tools) with `install-qt-action`.
+2. Builds libjxl as static libraries with a pinned vcpkg commit (cached).
+3. Configures with `-DREQUIRE_JXL=ON -DJXL_STATIC=ON -DAPP_VERSION=<version>`, builds, and runs `ctest`.
+4. Bundles Qt (`macdeployqt` + arm64 thinning + ad-hoc signature / `windeployqt` + FluentWinUI3 style + MSVC runtime).
+5. Runs `img-settings --smoke-test` on the bundled app.
+6. Packages and uploads the `.dmg` / `.zip` as workflow artifacts.
+
+### CI (`ci.yml`)
+
+Runs `build.yml` on every pull request to `main` (and on demand). A failing job blocks the merge.
+
+### Release (`release.yml`)
+
+On every push to `main`:
+1. `semantic-release` determines the next version and creates the GitHub Release.
+2. If a release was published, `build.yml` runs with that version.
+3. The `.dmg` and `.zip` are attached to the release.
+
+---
+
+## Performance Best Practices
+
+- Resize before watermarking so drawing happens at the final resolution.
+- Decode ARW through the embedded JPEG preview first; it avoids launching external tools.
+- Keep the UI thread free: all decoding and encoding happens in the thread pool. Thumbnails load asynchronously.
+
+---
+
+## Security Best Practices
+
+- External tools (`dcraw`, ImageMagick) are started with `QProcess` and explicit argument lists — never through a shell.
+- Only files accepted by `Watermark::isSupported` are processed; originals are never modified.
+- img-settings is fully offline. Do not add network access.
+- Fonts, icons and shaders are compiled into the binary as Qt resources.
