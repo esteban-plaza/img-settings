@@ -28,7 +28,7 @@ jobs:
       VCPKG_KEEP_ENV_VARS: MACOSX_DEPLOYMENT_TARGET
       TRIPLET: arm64-osx
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # aqtinstall (used by install-qt-action) does not support the runner's
       # default Python yet.
@@ -127,7 +127,7 @@ jobs:
       run:
         shell: pwsh
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # aqtinstall (used by install-qt-action) does not support the runner's
       # default Python yet.
